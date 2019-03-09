@@ -1,7 +1,8 @@
 (ns snake.gui
   (:require [quil.core :as q]
             [quil.middleware :as m]
-            [snake.domain :as s]))
+            [snake.domain :as s]
+            [snake.utils :refer :all]))
 
 (def frame-rate 10)
 (def key-to-direction {37 [-1 0]
@@ -9,11 +10,15 @@
                        38 [0 -1]
                        40 [0 1]})
 
+(defn load-image [symbol]
+  (->> (name symbol)
+       (format "resources/%s.png")
+       (q/load-image)))
+
 (defn setup []
   (do (q/smooth)
       {:game-state (s/create-state)
-       :images     {:food  (q/load-image "resources/food.png")
-                    :snake (q/load-image "resources/snake.png")}}))
+       :images     (as-map load-image [:food :snake])}))
 
 (defn key-pressed [state {:keys [key-code]}]
   (update state :game-state s/turn (key-to-direction key-code)))
