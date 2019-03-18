@@ -4,7 +4,7 @@
             [snake.domain :as s]
             [snake.utils :refer :all]))
 
-(def frame-rate 10)
+(def frame-rate 3)
 (def key-to-direction {37 [-1 0]
                        39 [1 0]
                        38 [0 -1]
@@ -17,7 +17,8 @@
 
 (defn setup []
   (do (q/smooth)
-      {:game-state (s/create-state)
+      {:game-state (s/create-state [(quot (q/screen-width) 64)
+                                    (quot (q/screen-height) 64)])
        :images     (as-map load-image [:food :snake])}))
 
 (defn key-pressed [state {:keys [key-code]}]
@@ -47,7 +48,8 @@
     :draw #(draw %)
     :key-pressed #(key-pressed %1 %2)
     :middleware [m/fun-mode]
-    :size [(- (q/screen-width) 100) (- (q/screen-height) 100)]))
+    :size [(full-multiple (q/screen-width) 64)
+           (full-multiple (q/screen-height) 64)]))
 
 (comment
   (def sketch (launch-sketch))
