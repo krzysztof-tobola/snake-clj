@@ -1,7 +1,5 @@
 (ns snake.domain)
 
-(def ^:private world {:food-amount 20})
-
 (defn gen-food [bounds]
   (map rand-int bounds))
 
@@ -24,10 +22,11 @@
     (-> state (update :snake subvec 1))))
 
 (defn create-state [bounds]
-  {:bounds   bounds
-   :snake    [(map / bounds [2 2])]
-   :velocity [0 0]
-   :food     #{}})
+  {:bounds      bounds
+   :snake       [(map / bounds [2 2])]
+   :velocity    [0 0]
+   :food        #{}
+   :food-amount (/ (apply * bounds) 10)})
 
 (defn reset? [{:keys [snake] :as state}]
   (if (apply distinct? snake)
@@ -36,7 +35,7 @@
 
 (defn update-state [state]
   (-> state
-      (update :food replenish-food (:food-amount world) (:bounds state))
+      (update :food replenish-food (:food-amount state) (:bounds state))
       grow-snake
       eat
       reset?))
@@ -48,12 +47,15 @@
 
 (defn compute-tiles [target-bounds state]
   (let [[sx sy] (map / target-bounds (:bounds state))
-        to-tiles (fn [key]
-                   (->> (state key)
+        to-tiles (fn [type points]
+                   (->> points
                         (map #(concat % [1 1]))
                         (map #(map * % [sx sy sx sy]))
-                        (map #(hash-map :type key :bounds %1))))]
-    (mapcat to-tiles [:snake :food])))
+                        (map #(hash-map :type type :bounds %1))))]
+    (concat
+      (to-tiles :snake-head (take 1 (rseq (:snake state))))
+      (to-tiles :snake (drop 1 (rseq (:snake state))))
+      (to-tiles :food (:food state)))))
 
 
 (defn score [{:keys [snake]}]

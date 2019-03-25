@@ -4,6 +4,7 @@
             [snake.domain :as s]
             [snake.utils :refer :all]))
 
+(def sketches (atom []))
 (def frame-rate 3)
 (def key-to-direction {37 [-1 0]
                        39 [1 0]
@@ -17,14 +18,13 @@
 
 (defn setup []
   (do (q/smooth)
-      {:game-state (s/create-state [(quot (q/screen-width) 64)
-                                    (quot (q/screen-height) 64)])
-       :images     (as-map load-image [:food :snake])}))
+      {:game-state (s/create-state (map #(quot % 64) [(q/width) (q/height)]))
+       :load-image (memoize load-image)}))
 
 (defn key-pressed [state {:keys [key-code]}]
   (update state :game-state s/turn (key-to-direction key-code)))
 
-(defn draw [{:keys [game-state images]}]
+(defn draw [{:keys [game-state load-image]}]
   (let [[w h :as dims] [(q/width) (q/height)]
         tiles (s/compute-tiles dims game-state)
         score (str "Score: " (s/score game-state))]
@@ -34,23 +34,26 @@
 
       (doseq
         [{[x y w h] :bounds tile-type :type} tiles]
-        (q/image (images tile-type) x y w h))
+        (q/image (load-image tile-type) x y w h))
 
       (q/fill 250 100 100)
       (q/text-size (/ h 30))
       (q/text score (/ w 60) (/ h 30)))))
 
-(defn launch-sketch []
-  (q/sketch
-    :title "Snake"
-    :setup setup
-    :update #(update % :game-state s/update-state)
-    :draw #(draw %)
-    :key-pressed #(key-pressed %1 %2)
-    :middleware [m/fun-mode]
-    :size [(full-multiple (q/screen-width) 64)
-           (full-multiple (q/screen-height) 64)]))
+(defn launch-sketch
+  ([]
+   (launch-sketch (q/screen-width) (q/screen-height)))
+  ([w h]
+   (swap! sketches conj
+          (q/sketch
+            :title "Snake"
+            :setup setup
+            :update #(update % :game-state s/update-state)
+            :draw #(draw %)
+            :key-pressed #'key-pressed
+            :middleware [m/fun-mode]
+            :size (map #(full-multiple % 64) [w h])))))
 
 (comment
-  (def sketch (launch-sketch))
-  (.exit sketch))
+  (launch-sketch 640 512)
+  (run! #(.exit %) @sketches))
