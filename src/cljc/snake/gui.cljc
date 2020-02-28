@@ -11,27 +11,28 @@
                        38 [0 -1]
                        40 [0 1]})
 
-(defn load-image [symbol]
-  (->> (name symbol)
-       (format "resources/%s.png")
-       (q/load-image)))
+(def load-image
+  (memoize
+    (fn [symbol]
+      (->> (name symbol)
+           (format "resources/%s.png")
+           (q/load-image)))))
 
 (defn setup []
   (do (q/smooth)
       {:game-state (s/create-state (map #(quot % 64) [(q/width) (q/height)]))
-       :load-image (memoize load-image)}))
+       :load-image nil}))
 
 (defn key-pressed [state {:keys [key-code]}]
   (update state :game-state s/turn (key-to-direction key-code)))
 
-(defn draw [{:keys [game-state load-image]}]
+(defn draw [{:keys [game-state _]}]
   (let [[w h :as dims] [(q/width) (q/height)]
         tiles (s/compute-tiles dims game-state)
         score (str "Score: " (s/score game-state))]
     (do
       (q/frame-rate frame-rate)
       (q/background 30 40 25)
-
       (doseq
         [{[x y w h] :bounds tile-type :type} tiles]
         (q/image (load-image tile-type) x y w h))
@@ -49,11 +50,11 @@
             :title "Snake"
             :setup setup
             :update #(update % :game-state s/update-state)
-            :draw #(draw %)
+            :draw #'draw
             :key-pressed #'key-pressed
             :middleware [m/fun-mode]
             :size (map #(full-multiple % 64) [w h])))))
 
 (comment
-  (launch-sketch 640 512)
+  (launch-sketch 800 700)
   (run! #(.exit %) @sketches))
