@@ -2,7 +2,8 @@
   (:require [quil.core :as q]
             [quil.middleware :as m]
             [snake.domain :as s]
-            [snake.utils :refer :all]))
+            [snake.utils :refer :all]
+            [dynne.sampled-sound :as d]))
 
 (def sketches (atom []))
 (def frame-rate 3)
@@ -33,6 +34,8 @@
     (do
       (q/frame-rate frame-rate)
       (q/background 30 40 25)
+      (doseq [e (:events game-state)]
+        (d/play (d/read-sound "resources/woof.mp3")))
       (doseq
         [{[x y w h] :bounds tile-type :type} tiles]
         (q/image (load-image tile-type) x y w h))
