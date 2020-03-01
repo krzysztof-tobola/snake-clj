@@ -1,5 +1,4 @@
-(ns snake.domain
-  (:require [dynne.sampled-sound :as d]))
+(ns snake.domain)
 
 (defn gen-food [bounds]
   (map rand-int bounds))
@@ -11,23 +10,23 @@
        set))
 
 (defn grow-snake [{:keys [snake velocity] :as state}]
-  (let [new-head (->> (peek snake)
-                      (map + velocity))
-        bounds (:bounds state)
+  (let [new-head         (->> (peek snake)
+                              (map + velocity))
+        bounds           (:bounds state)
         wrapped-new-head (map mod new-head bounds)]
     (-> state (update :snake conj wrapped-new-head))))
 
 (defn eat [{:keys [snake food] :as state}]
   (if-let [pellet (food (peek snake))]
-    (do
-      ;todo put this as :events into state and consume in gui
-      (d/play (d/read-sound "resources/woof.mp3"))
-      (-> state (update :food disj pellet)))
+    (-> state
+        (update :food disj pellet)
+        (update :events conj :food-consumed))
     (-> state (update :snake subvec 1))))
 
 (defn create-state [bounds]
   {:bounds      bounds
    :snake       [(map / bounds [2 2])]
+   :events      []
    :velocity    [0 0]
    :food        #{}
    :food-amount (/ (apply * bounds) 10)})
@@ -39,6 +38,7 @@
 
 (defn update-state [state]
   (-> state
+      (update :events empty)
       (update :food replenish-food (:food-amount state) (:bounds state))
       grow-snake
       eat
@@ -60,9 +60,7 @@
     (concat
       (mapcat #(to-tiles %1 (vector %2)) (cycle [:zuma :snake :skye :marshall]) snake)
       ;todo food should be a seq instead of set
-      (mapcat #(to-tiles %1 (vector %2)) (cycle [:food-1]) (reverse (sort-by first (:food state)))))))
-
-
+      (mapcat #(to-tiles %1 (vector %2)) (cycle [:food-1 :food-2]) (reverse (sort-by first (:food state)))))))
 
 (defn score [{:keys [snake]}]
   (count snake))
