@@ -66,5 +66,5 @@
       (mapcat #(to-tiles (:type %) (vector (:position %))) (:food state)))))
 
 (defn score [{:keys [snake]}]
-  (count snake))
+  (dec (count snake)))
 

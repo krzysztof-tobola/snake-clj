@@ -3,7 +3,7 @@
             [snake.domain :refer :all]))
 
 (deftest eat-stuff
-  (let [{:keys [snake events food]}
+  (let [{:keys [snake events food] :as s}
         (with-redefs [rand-int (fn [n] (int (/ n 3)))]
           (-> (create-state [10 10])
               (turn [-1 0])
@@ -12,6 +12,7 @@
               (turn [0 -1])
               update-state
               update-state))]
+    (is (= 1 (score s)))
     (is (empty? food))
     (is (= snake [[3 4] [3 3]]))
     (is (= events [:food-consumed]))))
