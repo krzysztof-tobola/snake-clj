@@ -36,7 +36,9 @@
 (defn- reset? [{:keys [snake] :as state}]
   (if (apply distinct? snake)
     state
-    (create-state (:bounds state))))
+    (-> (create-state (:bounds state))
+        (update :events conj :game-ended))))
+
 
 (defn update-state [state]
   (-> state
@@ -60,10 +62,8 @@
                         (map #(hash-map :type type :bounds %1))))
         snake    (rseq (:snake state))]
     (concat
-      (mapcat #(to-tiles %1 (vector %2)) (cycle [:zuma :snake :skye :marshall]) snake)
-      (mapcat #(to-tiles %1 (vector %2))
-              (map :type (:food state))
-              (map :position (:food state))))))
+      (mapcat #(to-tiles %1 (vector %2)) (concat [:zuma] (cycle [:snake :skye :marshall])) snake)
+      (mapcat #(to-tiles (:type %) (vector (:position %))) (:food state)))))
 
 (defn score [{:keys [snake]}]
   (count snake))
