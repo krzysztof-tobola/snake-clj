@@ -5,7 +5,7 @@
             [snake.utils :refer :all]
             [dynne.sampled-sound :as d]))
 
-(def sketches (atom []))
+(defonce sketches (atom []))
 (def frame-rate 3)
 (def key-to-direction {37 [-1 0]
                        39 [1 0]
@@ -19,6 +19,11 @@
            (format "resources/%s.png")
            (q/load-image)))))
 
+(defn load-sound [symbol]
+  (->> (name symbol)
+       (format "resources/%s.mp3")
+       (d/read-sound)))
+
 (defn setup []
   (do (q/smooth)
       {:game-state (s/create-state (map #(quot % 64) [(q/width) (q/height)]))
@@ -27,15 +32,15 @@
 (defn key-pressed [state {:keys [key-code]}]
   (update state :game-state s/turn (key-to-direction key-code)))
 
-(defn draw [{:keys [game-state _]}]
+(defn draw [{:keys [game-state]}]
   (let [[w h :as dims] [(q/width) (q/height)]
-        tiles (s/compute-tiles dims game-state)
+        tiles (s/compute-tiles game-state dims)
         score (str "Score: " (s/score game-state))]
     (do
       (q/frame-rate frame-rate)
       (q/background 30 40 25)
       (doseq [e (:events game-state)]
-        (d/play (d/read-sound "resources/woof.mp3")))
+        (d/play (load-sound e)))
       (doseq
         [{[x y w h] :bounds tile-type :type} tiles]
         (q/image (load-image tile-type) x y w h))
