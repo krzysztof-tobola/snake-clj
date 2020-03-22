@@ -28,10 +28,11 @@
 (defn create-state [bounds]
   {:bounds      bounds
    :snake       [(map / bounds [2 2])]
+   :actions     []
    :events      []
    :velocity    [0 0]
    :food        []
-   :food-amount (/ (apply * bounds) 10)})
+   :food-amount (/ (apply * bounds) 100)})
 
 (defn- reset? [{:keys [snake] :as state}]
   (if (apply distinct? snake)
@@ -39,9 +40,19 @@
     (-> (create-state (:bounds state))
         (update :events conj :game-ended))))
 
+(defn action [{:keys [actions velocity] :as state}]
+  (if-let [[_ dir] (first actions)]
+    (if (and dir (not= (map - dir) velocity))
+      (-> state
+          (update :actions rest)
+          (assoc :velocity dir))
+      (-> state
+          (update :actions rest)))
+    state))
 
 (defn update-state [state]
   (-> state
+      (action)
       (update :events empty)
       (update :food replenish-food (:food-amount state) (:bounds state))
       grow-snake
@@ -49,9 +60,8 @@
       reset?))
 
 (defn turn [{:keys [velocity] :as state} dir]
-  (if (and dir (not= (map - dir) velocity))
-    (assoc state :velocity dir)
-    state))
+  (update state :actions conj [:turn dir]))
+
 
 (defn compute-tiles [state target-bounds]
   (let [[sx sy] (map / target-bounds (:bounds state))

@@ -19,10 +19,12 @@
            (format "resources/%s.png")
            (q/load-image)))))
 
-(defn load-sound [symbol]
-  (->> (name symbol)
-       (format "resources/%s.mp3")
-       (d/read-sound)))
+(def load-sound
+  (memoize
+    (fn [symbol]
+      (->> (name symbol)
+           (format "resources/%s.mp3")
+           (d/read-sound)))))
 
 (defn setup []
   (do (q/smooth)
@@ -64,5 +66,5 @@
             :size (map #(full-multiple % 64) [w h])))))
 
 (comment
-  (launch-sketch 800 700)
+  (launch-sketch 1536 910)
   (run! #(.exit %) @sketches))
