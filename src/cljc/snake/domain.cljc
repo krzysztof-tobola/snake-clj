@@ -46,7 +46,7 @@
   (if-let [[_ dir] (first actions)]
     (if (and dir (not= (map - dir) velocity))
       (-> state
-          (update :actions rest)
+          (update :actions empty)
           (assoc :velocity dir))
       (-> state
           (update :actions rest)))
