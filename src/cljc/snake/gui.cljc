@@ -6,12 +6,11 @@
             [dynne.sampled-sound :as d]))
 
 (defonce sketches (atom []))
-(def frame-rate 3)
+(def frame-rate 60)
 (def key-to-direction {37 [-1 0]
                        39 [1 0]
                        38 [0 -1]
                        40 [0 1]})
-
 (def load-image
   (memoize
     (fn [symbol]
@@ -28,38 +27,45 @@
 
 (defn setup []
   (do (q/smooth)
-      {:game-state (s/create-state (map #(quot % 64) [(q/width) (q/height)]))
-       :load-image nil}))
+      {:game-state (-> (s/create-state (map #(quot % 64) [(q/width) (q/height)])))
+       :prev-state nil}))
 
 (defn key-pressed [state {:keys [key-code]}]
   (update state :game-state s/turn (key-to-direction key-code)))
 
-(defn draw [{:keys [game-state]}]
+(defn draw [{:keys [game-state prev-state]}]
   (let [[w h :as dims] [(q/width) (q/height)]
-        tiles (s/compute-tiles game-state dims)
-        score (str "Score: " (s/score game-state))]
-    (do
-      (q/frame-rate frame-rate)
-      (q/background 30 40 25)
-      (doseq [e (:events game-state)]
-        (d/play (load-sound e)))
-      (doseq
-        [{[x y w h] :bounds tile-type :type} tiles]
-        (q/image (load-image tile-type) x y w h))
+        tiles  (s/compute-tiles game-state dims)
+        tiles2 (s/compute-tiles prev-state dims)
+        score  (str "Score: " (s/score game-state))]
+    (when (not= tiles tiles2)
+      (do
+        (q/frame-rate frame-rate)
+        (q/background 30 40 25)
+        (doseq [e (:events game-state)]
+          (d/play (load-sound e)))
+        (doseq
+          [{[x y w h] :bounds tile-type :type} tiles]
+          (q/image (load-image tile-type) x y w h))
 
-      (q/fill 250 100 100)
-      (q/text-size (/ h 30))
-      (q/text score (/ w 60) (/ h 30)))))
+        (q/fill 250 100 100)
+        (q/text-size (/ h 30))
+        (q/text score (/ w 60) (/ h 30))))))
+
+(defn update-gs [st]
+  (-> st
+      (assoc :prev-state (:game-state st))
+      (update :game-state s/update-state)))
 
 (defn launch-sketch
   ([]
-   (launch-sketch (q/screen-width) (q/screen-height)))
+   (launch-sketch (q/screen-width) (- (q/screen-height) 40)))
   ([w h]
    (swap! sketches conj
           (q/sketch
             :title "Snake"
-            :setup setup
-            :update #(update % :game-state s/update-state)
+            :setup #'setup
+            :update #'update-gs
             :draw #'draw
             :key-pressed #'key-pressed
             :middleware [m/fun-mode]
