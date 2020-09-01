@@ -27,12 +27,14 @@
 
 (defn create-state [bounds]
   {:bounds      bounds
+   :clock       0
+   :clock-rate  10
    :snake       [(map / bounds [2 2])]
    :actions     []
    :events      []
    :velocity    [0 0]
    :food        []
-   :food-amount (/ (apply * bounds) 100)})
+   :food-amount (/ (apply * bounds) 30)})
 
 (defn- reset? [{:keys [snake] :as state}]
   (if (apply distinct? snake)
@@ -51,29 +53,36 @@
     state))
 
 (defn update-state [state]
-  (-> state
-      (action)
-      (update :events empty)
-      (update :food replenish-food (:food-amount state) (:bounds state))
-      grow-snake
-      eat
-      reset?))
+  (let [updated (-> state
+                    (update :clock inc)
+                    (update :events empty))]
+    (if (= 0 (mod (:clock state) (:clock-rate state)))
+      (-> updated
+          (action)
+          (update :food replenish-food (:food-amount updated) (:bounds updated))
+          grow-snake
+          eat
+          reset?)
+      updated)))
 
-(defn turn [{:keys [velocity] :as state} dir]
+(defn turn [state dir]
   (update state :actions conj [:turn dir]))
 
 
 (defn compute-tiles [state target-bounds]
-  (let [[sx sy] (map / target-bounds (:bounds state))
-        to-tiles (fn [type points]
-                   (->> points
-                        (map #(concat % [1 1]))
-                        (map #(map * % [sx sy sx sy]))
-                        (map #(hash-map :type type :bounds %1))))
-        snake    (rseq (:snake state))]
-    (concat
-      (mapcat #(to-tiles %1 (vector %2)) (concat [:zuma] (cycle [:snake :skye :marshall])) snake)
-      (mapcat #(to-tiles (:type %) (vector (:position %))) (:food state)))))
+  (if state
+    (let [[sx sy] (map / target-bounds (:bounds state))
+          to-tiles (fn [type points]
+                     (->> points
+                          (map #(concat % [1 1]))
+                          (map #(map * % [sx sy sx sy]))
+                          (map #(hash-map :type type :bounds %1))))
+          snake    (rseq (:snake state))]
+      (into #{}
+            (concat
+              (mapcat #(to-tiles %1 (vector %2)) (concat [:zuma] (cycle [:snake :skye :marshall])) snake)
+              (mapcat #(to-tiles (:type %) (vector (:position %))) (:food state)))))
+    #{}))
 
 (defn score [{:keys [snake]}]
   (dec (count snake)))

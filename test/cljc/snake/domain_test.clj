@@ -6,6 +6,7 @@
   (let [{:keys [snake events food] :as s}
         (with-redefs [rand-int (fn [n] (int (/ n 3)))]
           (-> (create-state [10 10])
+              (assoc :clock-rate 1)
               (turn [-1 0])
               (update-state)
               (update-state)
