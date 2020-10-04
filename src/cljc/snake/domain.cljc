@@ -1,6 +1,8 @@
 (ns snake.domain)
 
 (def foods [:food-1 :food-2 :food-3])
+(def snake-parts [:zuma :snake :skye :marshall])
+(def snake-parts [:green-head :green-tail])
 
 (defn- gen-food [bounds]
   {:position (map rand-int bounds)
@@ -73,7 +75,8 @@
 
 (defn compute-tiles [state target-bounds]
   (if state
-    (let [[sx sy] (map / target-bounds (:bounds state))
+    (let [[sh & st] snake-parts
+          [sx sy] (map / target-bounds (:bounds state))
           to-tiles (fn [type points]
                      (->> points
                           (map #(concat % [1 1]))
@@ -82,7 +85,7 @@
           snake    (rseq (:snake state))]
       (into #{}
             (concat
-              (mapcat #(to-tiles %1 (vector %2)) (concat [:zuma] (cycle [:snake :skye :marshall])) snake)
+              (mapcat #(to-tiles %1 (vector %2)) (concat [sh] (cycle st)) snake)
               (mapcat #(to-tiles (:type %) (vector (:position %))) (:food state)))))
     #{}))
 
