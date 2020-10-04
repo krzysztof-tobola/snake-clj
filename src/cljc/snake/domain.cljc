@@ -1,8 +1,10 @@
 (ns snake.domain)
 
+(def foods [:food-1 :food-2 :food-3])
+
 (defn- gen-food [bounds]
   {:position (map rand-int bounds)
-   :type     (rand-nth [:food-1 :food-2])})
+   :type     (rand-nth foods)})
 
 (defn- replenish-food [food amount bounds]
   (->> (repeatedly #(gen-food bounds))
