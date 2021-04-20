@@ -72,23 +72,32 @@
 (defn turn [state dir]
   (update state :actions conj [:turn dir]))
 
-
-(defn compute-tiles [state target-bounds]
+(defn drawable-items [state]
   (if state
     (let [[sh & st] snake-parts
-          [sx sy] (map / target-bounds (:bounds state))
-          to-tiles (fn [type points]
-                     (->> points
-                          (map #(concat % [1 1]))
-                          (map #(map * % [sx sy sx sy]))
-                          (map #(hash-map :type type :bounds %1))))
-          snake    (rseq (:snake state))]
-      (into #{}
-            (concat
-              (mapcat #(to-tiles %1 (vector %2)) (concat [sh] (cycle st)) snake)
-              (mapcat #(to-tiles (:type %) (vector (:position %))) (:food state)))))
+          snake-types  (concat [sh] (cycle st))
+          snake-points (rseq (:snake state))
+          snake-items  (map #(hash-map :type %1 :position %2) snake-types snake-points)
+          items        (concat snake-items (:food state))]
+      items)
     #{}))
+
+(defn compute-tiles [state target-bounds]
+  (let [source-bounds  (:bounds state)
+        drawable-items (drawable-items state)]
+    (if source-bounds
+      (let [[sx sy] (map / target-bounds source-bounds)
+            scale    [sx sy sx sy]
+            to-tiles (fn [{position :position :as item}]
+                       (assoc item :bounds (map * (concat position [1 1]) scale)))]
+
+        (->> (map to-tiles drawable-items)
+             (into #{})))
+      #{})))
+
+(comment
+  (drawable-items tmp)
+  (sort-by :type (compute-tiles tmp [24 14])))
 
 (defn score [{:keys [snake]}]
   (dec (count snake)))
-
