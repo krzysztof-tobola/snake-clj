@@ -1,4 +1,4 @@
-(ns cljc.snake.utils-test
+(ns snake.utils-test
   (:require [clojure.test :refer :all]
             [snake.utils :refer :all]))
 
