@@ -32,7 +32,7 @@
 (deftest tiles
   (is (= [{:type :food-1, :bounds [6 6 1 1]}
           {:type :food-2, :bounds [7 7 1 1]}
-          {:type :zuma,   :bounds [8 9 1 1]}]
+          {:type :green-head,   :bounds [8 9 1 1]}]
          (sort-by :type
                   (compute-tiles
                    {::d/bounds [20 20]

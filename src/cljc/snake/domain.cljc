@@ -2,7 +2,7 @@
   (:require [clojure.spec.alpha :as s]))
 
 (def foods [:food-1 :food-2 :food-3])
-(def snake-parts [:zuma :snake :skye :marshall])
+(def snake-parts [:green-head :green-tail])
 
 (defn- gen-food [bounds]
   {:position (map rand-int bounds)
@@ -50,7 +50,7 @@
    ::events      []
    ::velocity    [0 0]
    ::food        []
-   ::food-amount (/ (apply * bounds) 30)})
+   ::food-amount 1})
 
 (defn- reset? [{:keys [::snake] :as state}]
   (if (apply distinct? snake)
@@ -68,7 +68,13 @@
           (update ::actions rest)))
     state))
 
-(s/fdef update-state :args (s/cat :s ::state) :ret ::state)
+(s/fdef update-state :args (s/cat :input-state ::state) :ret ::state)
+
+(defn- update-food [state]
+  (update state ::food
+          replenish-food
+          (::food-amount state)
+          (::bounds state)))
 
 (defn update-state [state]
   (let [updated (-> state
@@ -76,10 +82,8 @@
                     (update ::events empty))]
     (if (= 0 (mod (::clock state) (::clock-rate state)))
       (-> updated
-          (action)
-          (update ::food replenish-food
-                  (::food-amount updated)
-                  (::bounds updated))
+          action
+          update-food
           grow-snake
           eat
           reset?)
