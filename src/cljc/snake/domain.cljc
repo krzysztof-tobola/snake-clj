@@ -8,11 +8,13 @@
   {:position (map rand-int bounds)
    :type     (rand-nth foods)})
 
-(defn- replenish-food [food amount bounds]
-  (->> (repeatedly #(gen-food bounds))
-       (concat food)
-       (take amount)
-       set))
+(defn- replenish-food [{:keys [::food ::food-amount ::bounds] :as state}]
+  (let [new-food (->> (repeatedly #(gen-food bounds))
+                      (concat food)
+                      (distinct)
+                      (take food-amount)
+                      (into #{}))]
+    (assoc state ::food new-food)))
 
 
 (defn- grow-snake [{:keys [::snake ::velocity ::bounds] :as state}]
@@ -28,6 +30,15 @@
         (update ::events conj :food-consumed))
     (-> state
         (update ::snake subvec 1))))
+
+(s/def ::bounds (s/cat :w int? :h int?))
+(s/def ::clock int?)
+(s/def ::clock-rate int?)
+(s/def ::point (s/cat :x int? :y int?))
+(s/def ::velocity ::point)
+(s/def ::snake (s/* (s/spec ::point)))
+(s/def ::item (s/keys :req-un [::position ::type]))
+(s/def ::food (s/coll-of ::item))
 
 (s/def ::state
   (s/keys :req [::bounds
@@ -70,12 +81,6 @@
 
 (s/fdef update-state :args (s/cat :input-state ::state) :ret ::state)
 
-(defn- update-food [state]
-  (update state ::food
-          replenish-food
-          (::food-amount state)
-          (::bounds state)))
-
 (defn update-state [state]
   (let [updated (-> state
                     (update ::clock inc)
@@ -83,7 +88,7 @@
     (if (= 0 (mod (::clock state) (::clock-rate state)))
       (-> updated
           action
-          update-food
+          replenish-food
           grow-snake
           eat
           reset?)

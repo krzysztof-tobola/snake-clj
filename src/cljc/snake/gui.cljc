@@ -6,7 +6,7 @@
             [dynne.sampled-sound :as d]))
 
 (defonce sketches (atom []))
-(def frame-rate 60)
+(def frame-rate 20)
 (def key-to-direction {37 [-1 0]
                        39 [1 0]
                        38 [0 -1]
