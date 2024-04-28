@@ -32,6 +32,7 @@
         (update ::snake subvec 1))))
 
 (s/def ::bounds (s/cat :w int? :h int?))
+(s/def ::time-millis int?)
 (s/def ::clock int?)
 (s/def ::clock-rate int?)
 (s/def ::point (s/cat :x int? :y int?))
@@ -42,6 +43,7 @@
 
 (s/def ::state
   (s/keys :req [::bounds
+                ::time-millis
                 ::clock
                 ::clock-rate
                 ::snake
@@ -54,6 +56,7 @@
 (s/fdef create-state :args (s/cat :v vector?) :ret ::state)
 (defn create-state [bounds]
   {::bounds      bounds
+   ::time-millis 0
    ::clock       0
    ::clock-rate  10
    ::snake       [(map / bounds [2 2])]
@@ -63,36 +66,77 @@
    ::food        []
    ::food-amount 1})
 
+(defn reset [{:keys [::bounds]}]
+  (-> (create-state bounds)
+      (update ::events conj :game-ended)))
+
 (defn- reset? [{:keys [::snake] :as state}]
   (if (apply distinct? snake)
     state
-    (-> (create-state (::bounds state))
-        (update ::events conj :game-ended))))
+    (reset state)))
+
+(defn drop-until [pred xs]
+  (drop-while (complement pred) xs))
 
 (defn action [{:keys [::actions ::velocity] :as state}]
-  (if-let [[_ dir] (first actions)]
-    (if (and dir (not= (map - dir) velocity))
-      (-> state
-          (update ::actions empty)
-          (assoc ::velocity dir))
-      (-> state
-          (update ::actions rest)))
-    state))
+  (let [valid? (fn [[type dir]] (and
+                                 dir
+                                 (not= (map - dir) velocity)
+                                 (not= dir velocity)))
+        valid-actions (drop-until valid? actions)]
+    (if (empty? valid-actions)
+      (assoc state ::actions [])
+      (do
+        (println "valid actions"  valid-actions)
+        (-> state
+            (assoc ::velocity (second (first valid-actions)))
+            (assoc ::actions (rest valid-actions)))))))
 
 (s/fdef update-state :args (s/cat :input-state ::state) :ret ::state)
 
-(defn update-state [state]
-  (let [updated (-> state
-                    (update ::clock inc)
-                    (update ::events empty))]
-    (if (= 0 (mod (::clock state) (::clock-rate state)))
-      (-> updated
-          action
-          replenish-food
-          grow-snake
-          eat
-          reset?)
-      updated)))
+
+;work in progress
+(defn timed-update [state time-millis f]
+  (let [current-clock (::clock state)
+        new-clock (quot time-millis 10)
+        diff (- new-clock current-clock)]
+    (-> (assoc state ::time-millis time-millis)
+        (assoc ::clock new-clock))))
+
+(comment
+
+  (= (timed-update (create-state [10 10]) 9 #(update % ::actions conj :x))
+     (-> (create-state [10 10])
+         (assoc ::time-millis 9)))
+
+  (= (timed-update (create-state [10 10]) 10 #(update % ::actions conj :x))
+     (-> (create-state [10 10])
+         (assoc ::time-millis 10)
+         (assoc :clock 1)))
+
+  (= (timed-update (create-state [10 10]) 10 #(update % ::actions conj :x))
+     (-> (create-state [10 10])
+         (assoc ::time-millis 20)
+         (assoc :clock 2)))
+
+  ())
+
+(defn update-state
+  ([state time-millis]
+   (let [updated (-> state
+                     (assoc ::time-millis time-millis)
+                     (update ::clock inc)
+                     (update ::events empty))]
+     (if (= 0 (mod (::clock state) (::clock-rate state)))
+       (-> updated
+           action
+           replenish-food
+           grow-snake
+           eat
+           reset?)
+       updated)))
+  ([state]
+   (update-state state 0)))
 
 (defn turn [state dir]
   (update state ::actions conj [:turn dir]))

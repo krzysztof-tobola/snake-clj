@@ -10,3 +10,5 @@
 /.lsp
 /.calva
 .DS_Store
+/.clj-kondo
+/.vscode/

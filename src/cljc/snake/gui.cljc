@@ -1,12 +1,13 @@
 (ns snake.gui
-  (:require [quil.core :as q]
+  (:require [clojure.core :refer [format]]
+            [dynne.sampled-sound :as d]
+            [quil.core :as q]
             [quil.middleware :as m]
             [snake.domain :as s]
-            [snake.utils :refer [full-multiple]]
-            [dynne.sampled-sound :as d]))
+            [snake.utils :refer [full-multiple]]))
 
 (defonce sketches (atom []))
-(def frame-rate 20)
+(def frame-rate 60)
 (def key-to-direction {37 [-1 0]
                        39 [1 0]
                        38 [0 -1]
@@ -28,7 +29,8 @@
 (defn setup []
   (q/smooth)
   (let [bounds  (map #(quot % 64) [(q/width) (q/height)])
-        _       (println "bounds" bounds)]
+        _       (println "bounds" bounds)
+        bounds [30 20]]
     {:game-state (s/create-state bounds)
      :prev-state nil}))
 
@@ -57,7 +59,7 @@
 (defn update-gs [st]
   (-> st
       (assoc :prev-state (:game-state st))
-      (update :game-state s/update-state)))
+      (update :game-state s/update-state (System/currentTimeMillis))))
 
 (defn launch-sketch
   ([]
@@ -79,7 +81,7 @@
   (quot (full-multiple 321 64) 64)
   (d/play (load-sound :food-consumed))
 
-  (launch-sketch 400 400)
+  (launch-sketch 900 600)
 
   (do
     (run! #(.exit %) @sketches)

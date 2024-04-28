@@ -1,5 +1,5 @@
 (ns snake.domain-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.test :refer [deftest is] :as t]
             [clojure.spec.test.alpha :as stest]
             [snake.domain :as d
              :refer [create-state
@@ -11,7 +11,29 @@
 (stest/instrument `update-state)
 (stest/instrument `create-state)
 
-(deftest eat-stuff
+
+
+(comment
+  (remove-ns 'snake.domain-test)
+  (t/run-tests)
+  )
+
+(deftest apply-actions
+  (t/are [act0 v0 _ act1 v1]
+         (= {::d/actions act1 ::d/velocity v1}
+            (d/action {::d/actions act0 ::d/velocity v0}))
+    [] [] :then [] []
+    [] [0 0] :then [] [0 0]
+    [[:move [1 0]]] [1 0] :then [] [1 0]
+    [[:move [1 0]]] [0 0] :then [] [1 0]
+    [[:move [1 0]] [:move [1 0]]] [1 0] :then [] [1 0]
+    [[:move [-1 0]] [:move [1 0]]] [1 0] :then [] [1 0]
+    [[:move [0 1]]] [1 0] :then [] [0 1])
+
+  )
+
+(comment
+ (deftest eat-stuff
   (let [{:keys [::d/snake 
                 ::d/events 
                 ::d/food] :as s}
@@ -27,7 +49,7 @@
     (is (= 1 (score s)))
     (is (empty? food))
     (is (= snake [[3 4] [3 3]]))
-    (is (= events [:food-consumed]))))
+    (is (= events [:food-consumed])))))
 
 (deftest tiles
   (is (= [{:type :food-1, :bounds [6 6 1 1]}
